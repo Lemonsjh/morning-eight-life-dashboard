@@ -1,0 +1,264 @@
+@import url("https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700&family=Sora:wght@500;600;700&display=swap");
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 218 34% 5%;
+    --foreground: 190 24% 94%;
+    --card: 218 28% 8%;
+    --card-foreground: 190 24% 94%;
+    --muted: 214 20% 14%;
+    --muted-foreground: 194 10% 66%;
+    --primary: 155 100% 58%;
+    --primary-foreground: 216 40% 5%;
+    --border: 203 20% 18%;
+    --input: 203 20% 18%;
+    --ring: 155 100% 58%;
+  }
+
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground font-body antialiased;
+    min-width: 320px;
+  }
+
+  body.intro-locked {
+    overflow: hidden;
+  }
+}
+
+.grid-surface {
+  background-image:
+    linear-gradient(rgba(50, 255, 154, 0.06) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(43, 183, 255, 0.05) 1px, transparent 1px);
+  background-size: 48px 48px;
+}
+
+.noise-layer {
+  background-image:
+    radial-gradient(circle at 20% 10%, rgba(50, 255, 154, 0.12), transparent 26rem),
+    radial-gradient(circle at 82% 18%, rgba(43, 183, 255, 0.15), transparent 24rem),
+    radial-gradient(circle at 42% 86%, rgba(255, 255, 255, 0.05), transparent 22rem);
+}
+
+.panel-glow {
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.06),
+    0 0 0 1px rgba(255, 255, 255, 0.02),
+    0 18px 60px rgba(0, 0, 0, 0.36);
+}
+
+.intro-gate {
+  --spotlight-x: 50vw;
+  --spotlight-y: 50vh;
+  --reveal-radius: 6.667rem;
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  cursor: none;
+  isolation: isolate;
+  background:
+    radial-gradient(circle at 50% 50%, rgba(14, 22, 24, 0.92), rgba(1, 2, 3, 0.98) 48%),
+    #010203;
+}
+
+.intro-gate--exiting {
+  --reveal-radius: 150vmax;
+  pointer-events: none;
+  animation: intro-gate-fade 900ms ease forwards;
+}
+
+.intro-reveal {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  background-image: url("/intro-reveal.png");
+  background-position: center;
+  background-size: cover;
+  filter: saturate(1.05) contrast(1.1);
+  clip-path: circle(var(--reveal-radius) at var(--spotlight-x) var(--spotlight-y));
+  -webkit-clip-path: circle(var(--reveal-radius) at var(--spotlight-x) var(--spotlight-y));
+  transition:
+    clip-path 900ms cubic-bezier(0.18, 0.82, 0.18, 1),
+    -webkit-clip-path 900ms cubic-bezier(0.18, 0.82, 0.18, 1),
+    filter 900ms ease;
+}
+
+.intro-vignette {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+  background:
+    linear-gradient(115deg, rgba(255, 255, 255, 0.07), transparent 28%),
+    radial-gradient(circle at var(--spotlight-x) var(--spotlight-y), transparent 0 5.667rem, rgba(0, 0, 0, 0.84) 10rem),
+    radial-gradient(circle at 50% 50%, transparent 0 18rem, rgba(0, 0, 0, 0.72) 62%);
+  transition: opacity 520ms ease;
+}
+
+.intro-cursor {
+  position: absolute;
+  left: var(--spotlight-x);
+  top: var(--spotlight-y);
+  z-index: 2;
+  width: 13.333rem;
+  height: 13.333rem;
+  border: 1px solid rgba(224, 244, 255, 0.42);
+  border-radius: 999px;
+  pointer-events: none;
+  transform: translate(-50%, -50%);
+  background: rgba(213, 239, 255, 0.08);
+  box-shadow:
+    inset 0 0 34px rgba(210, 244, 255, 0.18),
+    0 0 52px rgba(87, 190, 255, 0.18);
+  backdrop-filter: blur(1px);
+  transition:
+    opacity 260ms ease,
+    transform 620ms cubic-bezier(0.18, 0.82, 0.18, 1),
+    border-color 420ms ease,
+    box-shadow 420ms ease;
+}
+
+.intro-content {
+  position: relative;
+  z-index: 3;
+  display: flex;
+  min-height: 22rem;
+  width: min(86vw, 42rem);
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  transition:
+    opacity 260ms ease,
+    transform 320ms ease;
+}
+
+.intro-kicker {
+  margin-bottom: 1.1rem;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.045);
+  padding: 0.5rem 0.8rem;
+  color: rgba(201, 245, 255, 0.78);
+  font-family: Sora, ui-sans-serif, system-ui;
+  font-size: 0.68rem;
+  font-weight: 600;
+  letter-spacing: 0.16em;
+}
+
+.intro-title {
+  margin: 0;
+  color: rgba(248, 253, 255, 0.96);
+  font-family: Sora, ui-sans-serif, system-ui;
+  font-size: clamp(2.5rem, 7vw, 6.5rem);
+  font-weight: 700;
+  line-height: 0.95;
+  letter-spacing: 0;
+  text-shadow: 0 0 44px rgba(122, 221, 255, 0.18);
+}
+
+.intro-start {
+  margin-top: 2.6rem;
+  border: 1px solid rgba(205, 245, 255, 0.36);
+  border-radius: 999px;
+  background: linear-gradient(135deg, rgba(239, 252, 255, 0.96), rgba(142, 216, 229, 0.9));
+  padding: 0.9rem 1.5rem;
+  color: #031013;
+  font-size: 0.95rem;
+  font-weight: 700;
+  letter-spacing: 0;
+  box-shadow:
+    0 14px 46px rgba(97, 208, 235, 0.2),
+    inset 0 1px 0 rgba(255, 255, 255, 0.9);
+  transition:
+    transform 180ms ease,
+    box-shadow 180ms ease,
+    border-color 180ms ease;
+}
+
+.intro-start:hover,
+.intro-start:focus-visible {
+  transform: translateY(-2px);
+  border-color: rgba(255, 255, 255, 0.82);
+  box-shadow:
+    0 18px 56px rgba(97, 208, 235, 0.3),
+    inset 0 1px 0 rgba(255, 255, 255, 0.95);
+}
+
+.intro-start:disabled {
+  cursor: default;
+}
+
+.intro-gate--exiting .intro-content {
+  opacity: 0;
+  transform: translateY(-0.75rem);
+}
+
+.intro-gate--exiting .intro-vignette {
+  opacity: 0;
+}
+
+.intro-gate--exiting .intro-cursor {
+  opacity: 0;
+  transform: translate(-50%, -50%) scale(7);
+  border-color: rgba(224, 244, 255, 0);
+  box-shadow:
+    inset 0 0 90px rgba(210, 244, 255, 0.08),
+    0 0 120px rgba(87, 190, 255, 0.08);
+}
+
+@keyframes intro-gate-fade {
+  0%,
+  68% {
+    opacity: 1;
+  }
+
+  100% {
+    opacity: 0;
+  }
+}
+
+@media (pointer: coarse) {
+  .intro-gate {
+    cursor: auto;
+  }
+
+  .intro-reveal {
+    clip-path: circle(var(--reveal-radius) at 50% 44%);
+    -webkit-clip-path: circle(var(--reveal-radius) at 50% 44%);
+  }
+
+  .intro-cursor {
+    display: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .intro-gate--exiting {
+    animation-duration: 180ms;
+  }
+
+  .intro-reveal {
+    transition-duration: 180ms;
+  }
+
+  .intro-start {
+    transition: none;
+  }
+
+  .intro-content,
+  .intro-cursor,
+  .intro-vignette {
+    transition-duration: 120ms;
+  }
+}

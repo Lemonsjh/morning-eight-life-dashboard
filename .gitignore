@@ -1,0 +1,7 @@
+.env
+node_modules/
+dist/
+test-results/
+.netlify/
+vite.pid
+*.log
