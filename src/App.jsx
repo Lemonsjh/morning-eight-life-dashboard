@@ -8,7 +8,8 @@ import { UserLoginPanel } from "@/components/UserLoginPanel";
 import { WeeklyLineChart } from "@/components/WeeklyLineChart";
 import { Card, CardContent } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
-import { drinks, drinkImageByName } from "@/data/drinks";
+import { drinks } from "@/data/drinks";
+import { buildWeeklyIntake, hydrateLog } from "@/lib/dashboardUtils";
 import { getDateLabel, isSameLocalDate, shiftDateKey, toDateKey } from "@/lib/dateUtils";
 import {
   getDashboardData,
@@ -20,39 +21,8 @@ import {
 
 const savedUsernameKey = "morning-dashboard-username";
 
-function hydrateLog(log) {
-  return {
-    ...log,
-    image: drinkImageByName[log.drink_name] || drinks[0].image,
-    time_label: new Date(log.created_at).toLocaleTimeString("zh-CN", {
-      hour: "2-digit",
-      minute: "2-digit",
-      hour12: false,
-    }),
-  };
-}
-
-function buildWeeklyIntake(logs) {
-  const labels = ["周一", "周二", "周三", "周四", "周五", "周六", "周日"];
-  const today = new Date();
-  const monday = new Date(today);
-  const day = today.getDay() || 7;
-  monday.setDate(today.getDate() - day + 1);
-  monday.setHours(0, 0, 0, 0);
-
-  return labels.map((label, index) => {
-    const start = new Date(monday);
-    start.setDate(monday.getDate() + index);
-    const end = new Date(start);
-    end.setDate(start.getDate() + 1);
-    const mg = logs
-      .filter((log) => {
-        const createdAt = new Date(log.created_at);
-        return createdAt >= start && createdAt < end;
-      })
-      .reduce((sum, log) => sum + log.caffeine_mg, 0);
-    return { day: label, mg };
-  });
+function todoDateKey(todo) {
+  return todo.task_date || toDateKey(todo.created_at);
 }
 
 function App() {
@@ -63,6 +33,7 @@ function App() {
   const [username, setUsername] = useState("");
   const [taskTitle, setTaskTitle] = useState("");
   const [selectedLogDate, setSelectedLogDate] = useState(() => toDateKey());
+  const [selectedTodoDate, setSelectedTodoDate] = useState(() => toDateKey());
   const [selectedDrinkName, setSelectedDrinkName] = useState(drinks[0].drink_name);
   const [isLoading, setIsLoading] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
@@ -79,12 +50,21 @@ function App() {
     () => logs.filter((log) => isSameLocalDate(log.created_at, todayKey)),
     [logs, todayKey],
   );
+  const visibleTodos = useMemo(
+    () => todos.filter((todo) => todoDateKey(todo) === selectedTodoDate),
+    [todos, selectedTodoDate],
+  );
+  const todayTodos = useMemo(
+    () => todos.filter((todo) => todoDateKey(todo) === todayKey),
+    [todos, todayKey],
+  );
   const weeklyIntake = useMemo(() => buildWeeklyIntake(logs), [logs]);
   const totalCaffeine = todayLogs.reduce((sum, item) => sum + item.caffeine_mg, 0);
-  const completedCount = todos.filter((item) => item.is_completed).length;
-  const taskRate = Math.round((completedCount / Math.max(todos.length, 1)) * 100);
+  const completedCount = todayTodos.filter((item) => item.is_completed).length;
+  const taskRate = Math.round((completedCount / Math.max(todayTodos.length, 1)) * 100);
   const energy = Math.min(100, Math.round(38 + totalCaffeine / 8 + taskRate / 6));
   const selectedDateLabel = getDateLabel(selectedLogDate, todayKey);
+  const selectedTodoDateLabel = getDateLabel(selectedTodoDate, todayKey);
 
   async function loginWithUsername(nextUsername) {
     const normalizedUsername = nextUsername.trim();
@@ -99,6 +79,7 @@ function App() {
       setLogs(data.logs);
       setTodos(data.todos);
       setSelectedLogDate(toDateKey());
+      setSelectedTodoDate(toDateKey());
       window.localStorage.setItem(savedUsernameKey, activeUser.username);
     } catch (error) {
       setDbError(error.message || "用户同步失败");
@@ -128,6 +109,7 @@ function App() {
     setTaskTitle("");
     setUsername("");
     setSelectedLogDate(toDateKey());
+    setSelectedTodoDate(toDateKey());
     setDbError("");
   }
 
@@ -160,7 +142,7 @@ function App() {
     setIsSaving(true);
     setDbError("");
     try {
-      const created = await insertTodo(user.id, title);
+      const created = await insertTodo(user.id, title, selectedTodoDate);
       setTodos((current) => [created, ...current]);
       setTaskTitle("");
     } catch (error) {
@@ -185,6 +167,10 @@ function App() {
 
   function shiftLogDate(offsetDays) {
     setSelectedLogDate((current) => shiftDateKey(current, offsetDays));
+  }
+
+  function shiftTodoDate(offsetDays) {
+    setSelectedTodoDate((current) => shiftDateKey(current, offsetDays));
   }
 
   return (
@@ -246,7 +232,7 @@ function App() {
             icon={CheckCircle2}
             title="战线推进"
             value={`${taskRate}%`}
-            sub={user ? `${completedCount}/${todos.length} 个节点已经解除警报` : "登录后接入你的战术清单"}
+            sub={user ? `${completedCount}/${todayTodos.length} 个今日节点已经解除警报` : "登录后接入你的战术清单"}
           >
             <Progress value={taskRate} />
           </StatCard>
@@ -269,11 +255,16 @@ function App() {
             isSaving={isSaving || isLoading || !user}
           />
           <TodoPanel
-            todos={todos}
+            todos={visibleTodos}
             taskTitle={taskTitle}
             setTaskTitle={setTaskTitle}
             onAddTodo={addTodo}
             onToggleTodo={toggleTodo}
+            selectedDate={selectedTodoDate}
+            selectedDateLabel={selectedTodoDateLabel}
+            onSelectedDateChange={setSelectedTodoDate}
+            onShiftDate={shiftTodoDate}
+            visibleTodoCount={visibleTodos.length}
             isSaving={isSaving || isLoading || !user}
           />
         </section>

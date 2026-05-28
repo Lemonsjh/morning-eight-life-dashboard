@@ -79,10 +79,10 @@ export async function insertCaffeineLog(userId, drink) {
   return result.data;
 }
 
-export async function insertTodo(userId, title) {
+export async function insertTodo(userId, title, taskDate) {
   const result = await supabase
     .from(tables.todos)
-    .insert({ user_id: userId, title, is_completed: false })
+    .insert({ user_id: userId, title, task_date: taskDate, is_completed: false })
     .select("*")
     .single();
 
